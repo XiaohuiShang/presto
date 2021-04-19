@@ -28,11 +28,13 @@ import com.facebook.presto.sql.tree.BooleanLiteral;
 import com.facebook.presto.sql.tree.Call;
 import com.facebook.presto.sql.tree.CallArgument;
 import com.facebook.presto.sql.tree.Cast;
+import com.facebook.presto.sql.tree.CatalogElement;
 import com.facebook.presto.sql.tree.CharLiteral;
 import com.facebook.presto.sql.tree.CoalesceExpression;
 import com.facebook.presto.sql.tree.ColumnDefinition;
 import com.facebook.presto.sql.tree.Commit;
 import com.facebook.presto.sql.tree.ComparisonExpression;
+import com.facebook.presto.sql.tree.CreateCatalog;
 import com.facebook.presto.sql.tree.CreateFunction;
 import com.facebook.presto.sql.tree.CreateMaterializedView;
 import com.facebook.presto.sql.tree.CreateRole;
@@ -49,6 +51,7 @@ import com.facebook.presto.sql.tree.DereferenceExpression;
 import com.facebook.presto.sql.tree.DescribeInput;
 import com.facebook.presto.sql.tree.DescribeOutput;
 import com.facebook.presto.sql.tree.DoubleLiteral;
+import com.facebook.presto.sql.tree.DropCatalog;
 import com.facebook.presto.sql.tree.DropColumn;
 import com.facebook.presto.sql.tree.DropFunction;
 import com.facebook.presto.sql.tree.DropMaterializedView;
@@ -117,6 +120,7 @@ import com.facebook.presto.sql.tree.SetRole;
 import com.facebook.presto.sql.tree.SetSession;
 import com.facebook.presto.sql.tree.ShowCatalogs;
 import com.facebook.presto.sql.tree.ShowColumns;
+import com.facebook.presto.sql.tree.ShowCreateCatalog;
 import com.facebook.presto.sql.tree.ShowCreateFunction;
 import com.facebook.presto.sql.tree.ShowFunctions;
 import com.facebook.presto.sql.tree.ShowGrants;
@@ -700,6 +704,25 @@ public class TestSqlParser
     {
         assertStatement("SHOW CATALOGS", new ShowCatalogs(Optional.empty()));
         assertStatement("SHOW CATALOGS LIKE '%'", new ShowCatalogs(Optional.of("%")));
+    }
+
+    @Test
+    public void testCreateCatalog()
+    {
+        List<CatalogElement> catalogElements = Lists.newArrayList(new CatalogElement("connector.name", "123"), new CatalogElement("metastore.uri", "thrift://localhost:9083"));
+        assertStatement("CREATE CATALOG test_catalog('connector.name'='123','metastore.uri'='thrift://localhost:9083')", new CreateCatalog(new Identifier("test_catalog"), catalogElements));
+    }
+
+    @Test
+    public void testDropCatalog()
+    {
+        assertStatement("DROP CATALOG test_catalog", new DropCatalog(new Identifier("test_catalog")));
+    }
+
+    @Test
+    public void testShowCreateCatalog()
+    {
+        assertStatement("SHOW CREATE CATALOG test_catalog", new ShowCreateCatalog(new Identifier("test_catalog")));
     }
 
     @Test

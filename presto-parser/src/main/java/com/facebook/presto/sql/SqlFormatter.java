@@ -22,8 +22,10 @@ import com.facebook.presto.sql.tree.Analyze;
 import com.facebook.presto.sql.tree.AstVisitor;
 import com.facebook.presto.sql.tree.Call;
 import com.facebook.presto.sql.tree.CallArgument;
+import com.facebook.presto.sql.tree.CatalogElement;
 import com.facebook.presto.sql.tree.ColumnDefinition;
 import com.facebook.presto.sql.tree.Commit;
+import com.facebook.presto.sql.tree.CreateCatalog;
 import com.facebook.presto.sql.tree.CreateFunction;
 import com.facebook.presto.sql.tree.CreateMaterializedView;
 import com.facebook.presto.sql.tree.CreateRole;
@@ -35,6 +37,7 @@ import com.facebook.presto.sql.tree.Deallocate;
 import com.facebook.presto.sql.tree.Delete;
 import com.facebook.presto.sql.tree.DescribeInput;
 import com.facebook.presto.sql.tree.DescribeOutput;
+import com.facebook.presto.sql.tree.DropCatalog;
 import com.facebook.presto.sql.tree.DropColumn;
 import com.facebook.presto.sql.tree.DropFunction;
 import com.facebook.presto.sql.tree.DropMaterializedView;
@@ -91,6 +94,7 @@ import com.facebook.presto.sql.tree.SetSession;
 import com.facebook.presto.sql.tree.ShowCatalogs;
 import com.facebook.presto.sql.tree.ShowColumns;
 import com.facebook.presto.sql.tree.ShowCreate;
+import com.facebook.presto.sql.tree.ShowCreateCatalog;
 import com.facebook.presto.sql.tree.ShowCreateFunction;
 import com.facebook.presto.sql.tree.ShowFunctions;
 import com.facebook.presto.sql.tree.ShowGrants;
@@ -726,6 +730,44 @@ public final class SqlFormatter
                     builder.append(" LIKE ")
                             .append(formatStringLiteral(value)));
 
+            return null;
+        }
+
+        @Override
+        protected Void visitCreateCatalog(CreateCatalog node, Integer context)
+        {
+            builder.append("CREATE CATALOG ")
+                    .append(node.getIdentifier().getValue())
+                    .append("(");
+            List<CatalogElement> catalogElements = node.getCatalogElements();
+            for (int i = 0; i < catalogElements.size(); i++) {
+                visitCatalogElement(catalogElements.get(i), context);
+                if (i < catalogElements.size() - 1) {
+                    builder.append(",");
+                }
+            }
+            builder.append(")");
+            return null;
+        }
+
+        @Override
+        protected Void visitDropCatalog(DropCatalog node, Integer context)
+        {
+            builder.append("DROP CATALOG ").append(node.getCatalogName().getValue());
+            return null;
+        }
+
+        @Override
+        protected Void visitShowCreateCatalog(ShowCreateCatalog node, Integer context)
+        {
+            builder.append("SHOW CREATE CATALOG ").append(node.getCatalogName().getValue());
+            return null;
+        }
+
+        @Override
+        protected Void visitCatalogElement(CatalogElement node, Integer context)
+        {
+            builder.append(formatStringLiteral(node.getName())).append("=").append(formatStringLiteral(node.getValue()));
             return null;
         }
 
