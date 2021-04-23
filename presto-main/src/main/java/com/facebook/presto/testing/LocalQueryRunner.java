@@ -85,6 +85,7 @@ import com.facebook.presto.metadata.AnalyzePropertyManager;
 import com.facebook.presto.metadata.CatalogManager;
 import com.facebook.presto.metadata.ColumnPropertyManager;
 import com.facebook.presto.metadata.ConnectorMetadataUpdaterManager;
+import com.facebook.presto.metadata.DynamicCatalogManager;
 import com.facebook.presto.metadata.FunctionAndTypeManager;
 import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.InMemoryNodeManager;
@@ -293,6 +294,8 @@ public class LocalQueryRunner
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+    private final DynamicCatalogManager dynamicCatalogManager = new TestingDynamicCatalogManager();
+
     public LocalQueryRunner(Session defaultSession)
     {
         this(defaultSession, new FeaturesConfig(), new NodeSpillConfig(), false, false);
@@ -429,7 +432,8 @@ public class LocalQueryRunner
                 new EventListenerManager(),
                 blockEncodingManager,
                 new TestingTempStorageManager(),
-                new SessionPropertyDefaults(nodeInfo));
+                new SessionPropertyDefaults(nodeInfo),
+                new TestingDynamicCatalogManager());
 
         connectorManager.addConnectorFactory(globalSystemConnectorFactory);
         connectorManager.createConnection(GlobalSystemConnector.NAME, GlobalSystemConnector.NAME, ImmutableMap.of());

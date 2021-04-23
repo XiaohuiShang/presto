@@ -76,10 +76,10 @@ import com.facebook.presto.memory.MemoryResource;
 import com.facebook.presto.memory.NodeMemoryConfig;
 import com.facebook.presto.memory.ReservedSystemMemoryConfig;
 import com.facebook.presto.metadata.AnalyzePropertyManager;
-import com.facebook.presto.metadata.CatalogManager;
 import com.facebook.presto.metadata.ColumnPropertyManager;
 import com.facebook.presto.metadata.ConnectorMetadataUpdaterManager;
 import com.facebook.presto.metadata.DiscoveryNodeManager;
+import com.facebook.presto.metadata.DynamicCatalogStore;
 import com.facebook.presto.metadata.ForNodeManager;
 import com.facebook.presto.metadata.FunctionAndTypeManager;
 import com.facebook.presto.metadata.HandleJsonModule;
@@ -320,6 +320,9 @@ public class ServerMainModule
                 config -> FLAT.equalsIgnoreCase(config.getNetworkTopology()),
                 moduleBinder -> moduleBinder.bind(NetworkTopology.class).to(FlatNetworkTopology.class).in(Scopes.SINGLETON)));
 
+        // catalog execution
+        jaxrsBinder(binder).bind(CatalogResource.class);
+
         // task execution
         jaxrsBinder(binder).bind(TaskResource.class);
         newExporter(binder).export(TaskResource.class).withGeneratedName();
@@ -441,6 +444,7 @@ public class ServerMainModule
 
         // metadata
         binder.bind(StaticCatalogStore.class).in(Scopes.SINGLETON);
+        binder.bind(DynamicCatalogStore.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(StaticCatalogStoreConfig.class);
         binder.bind(StaticFunctionNamespaceStore.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(StaticFunctionNamespaceStoreConfig.class);
@@ -534,8 +538,6 @@ public class ServerMainModule
         // plugin manager
         binder.bind(PluginManager.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(PluginManagerConfig.class);
-
-        binder.bind(CatalogManager.class).in(Scopes.SINGLETON);
 
         // block encodings
         binder.bind(BlockEncodingManager.class).in(Scopes.SINGLETON);

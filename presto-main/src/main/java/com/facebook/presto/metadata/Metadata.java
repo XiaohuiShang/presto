@@ -335,6 +335,11 @@ public interface Metadata
     Map<String, ConnectorId> getCatalogNames(Session session);
 
     /**
+     * Returns properties for the specified catalog name.
+     */
+    Optional<Map<String, String>> getCatalogProperties(Session session, String catalogName);
+
+    /**
      * Get the names that match the specified table prefix (never null).
      */
     List<QualifiedObjectName> listViews(Session session, QualifiedTablePrefix prefix);

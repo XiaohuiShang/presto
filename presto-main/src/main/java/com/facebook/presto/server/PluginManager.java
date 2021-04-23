@@ -22,10 +22,12 @@ import com.facebook.presto.common.type.Type;
 import com.facebook.presto.connector.ConnectorManager;
 import com.facebook.presto.eventlistener.EventListenerManager;
 import com.facebook.presto.execution.resourceGroups.ResourceGroupManager;
+import com.facebook.presto.metadata.DynamicCatalogManager;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.security.AccessControlManager;
 import com.facebook.presto.server.security.PasswordAuthenticatorManager;
 import com.facebook.presto.spi.Plugin;
+import com.facebook.presto.spi.catalog.CatalogConfigurationManagerFactory;
 import com.facebook.presto.spi.classloader.ThreadContextClassLoader;
 import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.facebook.presto.spi.eventlistener.EventListenerFactory;
@@ -99,6 +101,7 @@ public class PluginManager
     private final BlockEncodingManager blockEncodingManager;
     private final TempStorageManager tempStorageManager;
     private final SessionPropertyDefaults sessionPropertyDefaults;
+    private final DynamicCatalogManager dynamicCatalogManager;
     private final ArtifactResolver resolver;
     private final File installedPluginsDir;
     private final List<String> plugins;
@@ -118,7 +121,8 @@ public class PluginManager
             EventListenerManager eventListenerManager,
             BlockEncodingManager blockEncodingManager,
             TempStorageManager tempStorageManager,
-            SessionPropertyDefaults sessionPropertyDefaults)
+            SessionPropertyDefaults sessionPropertyDefaults,
+            DynamicCatalogManager dynamicCatalogManager)
     {
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
@@ -142,6 +146,7 @@ public class PluginManager
         this.tempStorageManager = requireNonNull(tempStorageManager, "tempStorageManager is null");
         this.sessionPropertyDefaults = requireNonNull(sessionPropertyDefaults, "sessionPropertyDefaults is null");
         this.disabledConnectors = requireNonNull(config.getDisabledConnectors(), "disabledConnectors is null");
+        this.dynamicCatalogManager = requireNonNull(dynamicCatalogManager, "dynamicCatalogManager is null");
     }
 
     public void loadPlugins()
@@ -256,6 +261,11 @@ public class PluginManager
         for (TempStorageFactory tempStorageFactory : plugin.getTempStorageFactories()) {
             log.info("Registering temp storage %s", tempStorageFactory.getName());
             tempStorageManager.addTempStorageFactory(tempStorageFactory);
+        }
+
+        for (CatalogConfigurationManagerFactory configurationManagerFactory : plugin.getCatalogConfigurationManagerFactories()) {
+            log.info("Registering catalog configuration manager %s", configurationManagerFactory.getName());
+            dynamicCatalogManager.addCatalogConfigurationManagerFactory(configurationManagerFactory);
         }
     }
 

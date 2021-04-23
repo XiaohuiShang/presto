@@ -948,6 +948,12 @@ public class MetadataManager
     }
 
     @Override
+    public Optional<Map<String, String>> getCatalogProperties(Session session, String catalogName)
+    {
+        return transactionManager.getCatalogProperties(session.getRequiredTransactionId(), catalogName);
+    }
+
+    @Override
     public List<QualifiedObjectName> listViews(Session session, QualifiedTablePrefix prefix)
     {
         requireNonNull(prefix, "prefix is null");

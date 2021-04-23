@@ -81,6 +81,12 @@ public class DelegatingTransactionManager
     }
 
     @Override
+    public Optional<Map<String, String>> getCatalogProperties(TransactionId transactionId, String catalogName)
+    {
+        return delegate.getCatalogProperties(transactionId, catalogName);
+    }
+
+    @Override
     public Optional<CatalogMetadata> getOptionalCatalogMetadata(TransactionId transactionId, String catalogName)
     {
         return delegate.getOptionalCatalogMetadata(transactionId, catalogName);

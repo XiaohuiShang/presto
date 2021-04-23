@@ -15,14 +15,17 @@ package com.facebook.presto.metadata;
 
 import com.facebook.presto.spi.ConnectorId;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.facebook.presto.metadata.DynamicCatalogStore.CONNECTOR_NAME_KEY;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -30,6 +33,7 @@ import static java.util.Objects.requireNonNull;
 public class CatalogManager
 {
     private final ConcurrentMap<String, Catalog> catalogs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Map<String, String>> catalogInfos = new ConcurrentHashMap<>();
 
     public synchronized void registerCatalog(Catalog catalog)
     {
@@ -52,5 +56,27 @@ public class CatalogManager
     public Optional<Catalog> getCatalog(String catalogName)
     {
         return Optional.ofNullable(catalogs.get(catalogName));
+    }
+
+    public void registerCatalogInfo(String catalogName, String connectorName, Map<String, String> properties)
+    {
+        requireNonNull(catalogName, "catalogName is null");
+        requireNonNull(catalogName, "connectorName is null");
+        requireNonNull(properties, "properties is null");
+        ImmutableMap.Builder<String, String> props = ImmutableMap.builder();
+        props.put(CONNECTOR_NAME_KEY, connectorName);
+        props.putAll(properties);
+        catalogInfos.put(catalogName, props.build());
+    }
+
+    public void removeCatalogInfo(String catalogName)
+    {
+        requireNonNull(catalogName, "catalogName is null");
+        catalogInfos.remove(catalogName);
+    }
+
+    public Optional<Map<String, String>> getCatalogInfo(String catalogName)
+    {
+        return Optional.ofNullable(catalogInfos.get(catalogName));
     }
 }

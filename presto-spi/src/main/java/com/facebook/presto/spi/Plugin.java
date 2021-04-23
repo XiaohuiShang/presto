@@ -16,6 +16,7 @@ package com.facebook.presto.spi;
 import com.facebook.presto.common.block.BlockEncoding;
 import com.facebook.presto.common.type.ParametricType;
 import com.facebook.presto.common.type.Type;
+import com.facebook.presto.spi.catalog.CatalogConfigurationManagerFactory;
 import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.facebook.presto.spi.eventlistener.EventListenerFactory;
 import com.facebook.presto.spi.function.FunctionNamespaceManagerFactory;
@@ -88,6 +89,11 @@ public interface Plugin
     }
 
     default Iterable<TempStorageFactory> getTempStorageFactories()
+    {
+        return emptyList();
+    }
+
+    default Iterable<CatalogConfigurationManagerFactory> getCatalogConfigurationManagerFactories()
     {
         return emptyList();
     }

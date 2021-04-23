@@ -38,6 +38,8 @@ import com.facebook.presto.execution.scheduler.NodeSchedulerConfig;
 import com.facebook.presto.execution.warnings.WarningCollectorModule;
 import com.facebook.presto.metadata.Catalog;
 import com.facebook.presto.metadata.CatalogManager;
+import com.facebook.presto.metadata.DynamicCatalogManager;
+import com.facebook.presto.metadata.DynamicCatalogStore;
 import com.facebook.presto.metadata.StaticCatalogStore;
 import com.facebook.presto.metadata.StaticFunctionNamespaceStore;
 import com.facebook.presto.security.AccessControlManager;
@@ -80,6 +82,8 @@ public class PrestoServer
     }
 
     private final SqlParserOptions sqlParserOptions;
+    private static Announcer announcer;
+    private static ServerConfig serverConfig;
 
     public PrestoServer()
     {
@@ -89,6 +93,10 @@ public class PrestoServer
     public PrestoServer(SqlParserOptions sqlParserOptions)
     {
         this.sqlParserOptions = requireNonNull(sqlParserOptions, "sqlParserOptions is null");
+    }
+
+    public enum ConnectorAction {
+        ADD, DELETE, MODIFY;
     }
 
     @Override
@@ -136,6 +144,11 @@ public class PrestoServer
             injector.getInstance(PluginManager.class).loadPlugins();
 
             injector.getInstance(StaticCatalogStore.class).loadCatalogs();
+            injector.getInstance(DynamicCatalogManager.class).loadConfigurationManager();
+            injector.getInstance(DynamicCatalogStore.class).loadCatalogs();
+
+            announcer = injector.getInstance(Announcer.class);
+            serverConfig = injector.getInstance(ServerConfig.class);
 
             // TODO: remove this huge hack
             updateConnectorIds(
@@ -215,6 +228,29 @@ public class PrestoServer
         announcer.addServiceAnnouncement(builder.build());
     }
 
+    public static void updateConnectorIds(String connectorId, ConnectorAction action)
+    {
+        // get existing announcement
+        ServiceAnnouncement announcement = getPrestoAnnouncement(announcer.getServiceAnnouncements());
+
+        // update datasources property
+        Map<String, String> properties = new LinkedHashMap<>(announcement.getProperties());
+        String property = nullToEmpty(properties.get("connectorIds"));
+        Set<String> connectorIds = new LinkedHashSet<>(Splitter.on(',').trimResults().omitEmptyStrings().splitToList(property));
+        if (action == ConnectorAction.ADD) {
+            connectorIds.add(connectorId);
+        }
+        else if (action == ConnectorAction.DELETE) {
+            connectorIds.remove(connectorId);
+        }
+        properties.put("connectorIds", Joiner.on(',').join(connectorIds));
+
+        // update announcement
+        announcer.removeServiceAnnouncement(announcement.getId());
+        announcer.addServiceAnnouncement(serviceAnnouncement(announcement.getType()).addProperties(properties).build());
+        announcer.forceAnnounce();
+    }
+
     private static void updateThriftServerPort(Announcer announcer, DriftServer driftServer)
     {
         // get existing announcement
@@ -241,5 +277,10 @@ public class PrestoServer
             }
         }
         throw new IllegalArgumentException("Presto announcement not found: " + announcements);
+    }
+
+    public static boolean isCoordinator()
+    {
+        return serverConfig.isCoordinator();
     }
 }
