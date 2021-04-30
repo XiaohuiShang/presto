@@ -76,13 +76,16 @@ import com.facebook.presto.memory.MemoryResource;
 import com.facebook.presto.memory.NodeMemoryConfig;
 import com.facebook.presto.memory.ReservedSystemMemoryConfig;
 import com.facebook.presto.metadata.AnalyzePropertyManager;
+import com.facebook.presto.metadata.CatalogManager;
 import com.facebook.presto.metadata.ColumnPropertyManager;
 import com.facebook.presto.metadata.ConnectorMetadataUpdaterManager;
 import com.facebook.presto.metadata.DiscoveryNodeManager;
+import com.facebook.presto.metadata.DynamicCatalogManager;
 import com.facebook.presto.metadata.DynamicCatalogStore;
 import com.facebook.presto.metadata.ForNodeManager;
 import com.facebook.presto.metadata.FunctionAndTypeManager;
 import com.facebook.presto.metadata.HandleJsonModule;
+import com.facebook.presto.metadata.InternalDynamicCatalogManager;
 import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.Metadata;
 import com.facebook.presto.metadata.MetadataManager;
@@ -493,6 +496,12 @@ public class ServerMainModule
 
         // system connector
         binder.install(new SystemConnectorModule());
+
+        // catalog manager
+        binder.bind(CatalogManager.class).in(Scopes.SINGLETON);
+        binder.bind(InternalDynamicCatalogManager.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(DynamicCatalogManager.class).withGeneratedName();
+        binder.bind(DynamicCatalogManager.class).to(InternalDynamicCatalogManager.class);
 
         // splits
         jsonCodecBinder(binder).bindJsonCodec(TaskUpdateRequest.class);

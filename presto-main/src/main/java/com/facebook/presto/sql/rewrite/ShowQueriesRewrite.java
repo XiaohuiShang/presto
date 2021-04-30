@@ -44,7 +44,9 @@ import com.facebook.presto.sql.tree.AllColumns;
 import com.facebook.presto.sql.tree.ArrayConstructor;
 import com.facebook.presto.sql.tree.AstVisitor;
 import com.facebook.presto.sql.tree.BooleanLiteral;
+import com.facebook.presto.sql.tree.CatalogElement;
 import com.facebook.presto.sql.tree.ColumnDefinition;
+import com.facebook.presto.sql.tree.CreateCatalog;
 import com.facebook.presto.sql.tree.CreateFunction;
 import com.facebook.presto.sql.tree.CreateMaterializedView;
 import com.facebook.presto.sql.tree.CreateTable;
@@ -65,6 +67,7 @@ import com.facebook.presto.sql.tree.RoutineCharacteristics;
 import com.facebook.presto.sql.tree.ShowCatalogs;
 import com.facebook.presto.sql.tree.ShowColumns;
 import com.facebook.presto.sql.tree.ShowCreate;
+import com.facebook.presto.sql.tree.ShowCreateCatalog;
 import com.facebook.presto.sql.tree.ShowCreateFunction;
 import com.facebook.presto.sql.tree.ShowFunctions;
 import com.facebook.presto.sql.tree.ShowGrants;
@@ -92,6 +95,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import static com.facebook.presto.connector.informationSchema.InformationSchemaMetadata.TABLE_COLUMNS;
 import static com.facebook.presto.connector.informationSchema.InformationSchemaMetadata.TABLE_ENABLED_ROLES;
@@ -379,6 +383,18 @@ final class ShowQueriesRewrite
                     aliased(new Values(rows), "catalogs", ImmutableList.of("Catalog")),
                     predicate,
                     Optional.of(ordering(ascending("Catalog"))));
+        }
+
+        @Override
+        protected Node visitShowCreateCatalog(ShowCreateCatalog node, Void context)
+        {
+            final String catalogName = node.getCatalogName().getValue();
+            Optional<Map<String, String>> properties = metadata.getCatalogProperties(session, catalogName);
+            final List<CatalogElement> catalogElements = properties.get().entrySet().stream()
+                    .map(entry -> new CatalogElement(entry.getKey(), entry.getValue()))
+                    .collect(Collectors.toList());
+            final CreateCatalog catalog = new CreateCatalog(new Identifier(catalogName), catalogElements);
+            return singleValueQuery("Create Catalog", formatSql(catalog, Optional.empty()));
         }
 
         @Override
